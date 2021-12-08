@@ -1,0 +1,2 @@
+config:
+  gcp:project: "android-automation-gcp-pulumi"
