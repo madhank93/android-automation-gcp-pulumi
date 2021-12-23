@@ -1,1 +1,1 @@
-export {instanceName} from './gcp';
+export { instanceName } from "./gcp";
