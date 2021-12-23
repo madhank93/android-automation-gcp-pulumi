@@ -14,13 +14,13 @@ const computeFirewall = new gcp.compute.Firewall("firewall", {
 
 // Create a Virtual Machine Instance
 const computeInstance = new gcp.compute.Instance("instance", {
-  machineType: "f1-micro",
+  machineType: "e2-standard-2",
   zone: "us-central1-a",
-  bootDisk: { initializeParams: { image: "debian-cloud/debian-9" } },
+  bootDisk: { initializeParams: { image: "ubuntu-os-cloud/ubuntu-1804-lts" } },
   networkInterfaces: [
     {
       network: network.id,
-      // accessConfigus must include a single empty config to request an ephemeral IP
+      // accessConfigs must include a single empty config to request an ephemeral IP
       accessConfigs: [{}],
     },
   ],
