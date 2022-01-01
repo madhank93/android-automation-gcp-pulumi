@@ -14,7 +14,7 @@ const computeFirewall = new gcp.compute.Firewall("firewall", {
 
 // Create a Virtual Machine Instance
 const computeInstance = new gcp.compute.Instance("instance", {
-  machineType: "e2-standard-2",
+  machineType: "n2-standard-2",
   zone: "us-central1-a",
   bootDisk: { initializeParams: { image: "ubuntu-os-cloud/ubuntu-1804-lts" } },
   networkInterfaces: [
