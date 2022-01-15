@@ -1,18 +1,31 @@
 import * as gcp from "@pulumi/gcp";
 import { remote, types } from "@pulumi/command";
-import { Config } from "@pulumi/pulumi";
+import { Config, interpolate } from "@pulumi/pulumi";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
 const config = new Config();
-const publicKey = config.get("publicKey");
 
 const privateKeyBase64 = config.get("privateKeyBase64");
 
 const privateKey = privateKeyBase64
   ? Buffer.from(privateKeyBase64, "base64").toString("ascii")
-  : fs.readFileSync(path.join(os.homedir(), ".ssh", "id_rsa")).toString("utf8");
+  : fs
+      .readFileSync(path.join(os.homedir(), ".ssh", "id_rsa"))
+      .toString("utf-8")
+      .trim();
+
+const me = gcp.organizations.getClientOpenIdUserInfo({});
+
+const cache = new gcp.oslogin.SshPublicKey("cache", {
+  project: "android-automation-gcp-pulumi",
+  user: me.then((me) => me.email),
+  key: fs
+    .readFileSync(path.join(os.homedir(), ".ssh", "id_rsa.pub"))
+    .toString("utf-8")
+    .trim(),
+});
 
 const svcAct = new gcp.serviceaccount.Account("my-service-account", {
   accountId: "service-account",
@@ -28,6 +41,18 @@ const address = new gcp.compute.Address("my-address", {
   region: "us-central1",
 });
 
+const network = new gcp.compute.Network("network");
+
+const computeFirewall = new gcp.compute.Firewall("firewall", {
+  network: network.id,
+  allows: [
+    {
+      protocol: "tcp",
+      ports: ["22"],
+    },
+  ],
+});
+
 // Create a Virtual Machine Instance
 const computeInstance = new gcp.compute.Instance("instance", {
   machineType: "n2-standard-2",
@@ -40,7 +65,7 @@ const computeInstance = new gcp.compute.Instance("instance", {
   },
   networkInterfaces: [
     {
-      network: "default",
+      network: network.id,
       accessConfigs: [{ natIp: address.address }],
     },
   ],
@@ -50,20 +75,19 @@ const computeInstance = new gcp.compute.Instance("instance", {
     email: svcAct.email,
   },
   metadata: {
-    "enable-oslogin": "false",
-    "ssh-keys": `user:${publicKey}`,
+    "ssh-keys": interpolate`madhankumaravelu93:${cache.key}`,
   },
 });
 
 const connection: types.input.remote.ConnectionArgs = {
   host: address.address,
-  user: "user",
+  user: "madhankumaravelu93",
   privateKey: privateKey,
 };
 
 const copyFile = new remote.CopyFile("docker-install-file", {
   connection,
-  localPath: "./deploy.sh",
+  localPath: "deploy.sh",
   remotePath: "deploy.sh",
 });
 
