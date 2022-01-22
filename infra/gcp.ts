@@ -85,16 +85,20 @@ const connection: types.input.remote.ConnectionArgs = {
   privateKey: privateKey,
 };
 
-const copyFile = new remote.CopyFile("docker-install-file", {
-  connection,
-  localPath: "deploy.sh",
-  remotePath: "deploy.sh",
-});
+const copyFile = new remote.CopyFile(
+  "copy-shell-script",
+  {
+    connection,
+    localPath: "deploy.sh",
+    remotePath: "deploy.sh",
+  },
+  { dependsOn: computeInstance }
+);
 
 const execCommand = new remote.Command(
-  "exec-docker-shell",
+  "exec-shell-script",
   {
-    connection: connection,
+    connection,
     create: "sh deploy.sh",
   },
   { dependsOn: copyFile }
@@ -102,3 +106,7 @@ const execCommand = new remote.Command(
 
 // Export the name and IP address of the Instance
 export const instanceName = computeInstance.name;
+
+export const externalIP = address.address;
+
+export const dockerInstallation = execCommand;
