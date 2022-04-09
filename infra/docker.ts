@@ -6,6 +6,12 @@ const remoteInstance = new docker.Provider(
   "remote",
   {
     host: interpolate`ssh://madhankumaravelu93@${externalIP}:22`,
+    sshOpts: [
+      "-o",
+      "StrictHostKeyChecking=no",
+      "-o",
+      "UserKnownHostsFile=/dev/null",
+    ],
   },
   { dependsOn: dockerInstallation }
 );
