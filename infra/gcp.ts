@@ -16,16 +16,10 @@ const privateKey = privateKeyBase64
       .toString("utf-8")
       .trim();
 
-const me = gcp.organizations.getClientOpenIdUserInfo({});
-
-const cache = new gcp.oslogin.SshPublicKey("cache", {
-  project: "android-automation-gcp-pulumi",
-  user: me.then((me) => me.email),
-  key: fs
-    .readFileSync(path.join(os.homedir(), ".ssh", "id_rsa.pub"))
-    .toString("utf-8")
-    .trim(),
-});
+const publicKey = fs
+  .readFileSync(path.join(os.homedir(), ".ssh", "id_rsa.pub"))
+  .toString("utf-8")
+  .trim();
 
 const svcAct = new gcp.serviceaccount.Account("my-service-account", {
   accountId: "service-account",
@@ -48,7 +42,7 @@ const computeFirewall = new gcp.compute.Firewall("firewall", {
   allows: [
     {
       protocol: "tcp",
-      ports: ["22"],
+      ports: ["22", "8080"],
     },
   ],
 });
@@ -75,7 +69,7 @@ const computeInstance = new gcp.compute.Instance("instance", {
     email: svcAct.email,
   },
   metadata: {
-    "ssh-keys": interpolate`madhankumaravelu93:${cache.key}`,
+    "ssh-keys": interpolate`madhankumaravelu93:${publicKey}`,
   },
 });
 
@@ -91,6 +85,16 @@ const copyFile = new remote.CopyFile(
     connection,
     localPath: "deploy.sh",
     remotePath: "deploy.sh",
+  },
+  { dependsOn: computeInstance }
+);
+
+const copyBrowserJsonFile = new remote.CopyFile(
+  "copy-browser-json",
+  {
+    connection,
+    localPath: "../src/resource/selenoid/browsers.json",
+    remotePath: "browsers.json",
   },
   { dependsOn: computeInstance }
 );
