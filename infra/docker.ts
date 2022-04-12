@@ -93,7 +93,7 @@ const selenoidContainer = new docker.Container(
   }
 );
 
-const selenoidUiContainer = new docker.Container(
+new docker.Container(
   "selenoid-ui-container",
   {
     image: selenoidUiImage.name,
@@ -105,4 +105,4 @@ const selenoidUiContainer = new docker.Container(
   { provider: remoteInstance, dependsOn: selenoidContainer }
 );
 
-export const selenoid = selenoidContainer;
+export const selenoidID = selenoidContainer.id;

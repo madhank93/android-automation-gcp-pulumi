@@ -1,32 +1,25 @@
 import * as gcp from "@pulumi/gcp";
 import { remote, types } from "@pulumi/command";
-import { Config, interpolate } from "@pulumi/pulumi";
+import { interpolate } from "@pulumi/pulumi";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
-const config = new Config();
+const getKey = (filename: string) =>
+  fs
+    .readFileSync(path.join(os.homedir(), ".ssh", filename))
+    .toString("utf-8")
+    .trim();
 
-const privateKeyBase64 = config.get("privateKeyBase64");
-
-const privateKey = privateKeyBase64
-  ? Buffer.from(privateKeyBase64, "base64").toString("ascii")
-  : fs
-      .readFileSync(path.join(os.homedir(), ".ssh", "id_rsa"))
-      .toString("utf-8")
-      .trim();
-
-const publicKey = fs
-  .readFileSync(path.join(os.homedir(), ".ssh", "id_rsa.pub"))
-  .toString("utf-8")
-  .trim();
+const publicKey = getKey("id_rsa.pub");
+const privateKey = getKey("id_rsa");
 
 const svcAct = new gcp.serviceaccount.Account("my-service-account", {
   accountId: "service-account",
   displayName: "Service account for Pulumi",
 });
 
-const svcKey = new gcp.serviceaccount.Key("my-service-key", {
+new gcp.serviceaccount.Key("my-service-key", {
   serviceAccountId: svcAct.name,
   publicKeyType: "TYPE_X509_PEM_FILE",
 });
@@ -37,7 +30,7 @@ const address = new gcp.compute.Address("my-address", {
 
 const network = new gcp.compute.Network("network");
 
-const computeFirewall = new gcp.compute.Firewall("firewall", {
+new gcp.compute.Firewall("firewall", {
   network: network.id,
   allows: [
     {
@@ -108,9 +101,7 @@ const execCommand = new remote.Command(
   { dependsOn: copyFile }
 );
 
-// Export the name and IP address of the Instance
-export const instanceName = computeInstance.name;
-
+// Export the IP address of the Instance
 export const externalIP = address.address;
 
 export const dockerInstallation = execCommand;
