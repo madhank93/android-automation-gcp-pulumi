@@ -1,32 +1,26 @@
 import * as gcp from "@pulumi/gcp";
 import { remote, types } from "@pulumi/command";
-import { Config, interpolate } from "@pulumi/pulumi";
+import { interpolate } from "@pulumi/pulumi";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
-const config = new Config();
+const getKey = (filename: string) =>
+  fs
+    .readFileSync(path.join(os.homedir(), ".ssh", filename))
+    .toString("utf-8")
+    .trim();
 
-const privateKeyBase64 = config.get("privateKeyBase64");
+const publicKey = getKey("id_rsa.pub");
+const privateKey = getKey("id_rsa");
 
-const privateKey = privateKeyBase64
-  ? Buffer.from(privateKeyBase64, "base64").toString("ascii")
-  : fs
-      .readFileSync(path.join(os.homedir(), ".ssh", "id_rsa"))
-      .toString("utf-8")
-      .trim();
-
-const publicKey = fs
-  .readFileSync(path.join(os.homedir(), ".ssh", "id_rsa.pub"))
-  .toString("utf-8")
-  .trim();
-
+// Create service account
 const svcAct = new gcp.serviceaccount.Account("my-service-account", {
   accountId: "service-account",
   displayName: "Service account for Pulumi",
 });
 
-const svcKey = new gcp.serviceaccount.Key("my-service-key", {
+new gcp.serviceaccount.Key("my-service-key", {
   serviceAccountId: svcAct.name,
   publicKeyType: "TYPE_X509_PEM_FILE",
 });
@@ -35,14 +29,14 @@ const address = new gcp.compute.Address("my-address", {
   region: "us-central1",
 });
 
+// Create a network
 const network = new gcp.compute.Network("network");
-
-const computeFirewall = new gcp.compute.Firewall("firewall", {
+new gcp.compute.Firewall("firewall", {
   network: network.id,
   allows: [
     {
       protocol: "tcp",
-      ports: ["22", "8080"],
+      ports: ["22", "8080"], // 22 - enable ssh and 8080 - live execution through selenoid ui
     },
   ],
 });
@@ -73,12 +67,14 @@ const computeInstance = new gcp.compute.Instance("instance", {
   },
 });
 
+// Set up a connection to the remote instance
 const connection: types.input.remote.ConnectionArgs = {
   host: address.address,
   user: "madhankumaravelu93",
   privateKey: privateKey,
 };
 
+// Copy shell script to the remote instance
 const copyFile = new remote.CopyFile(
   "copy-shell-script",
   {
@@ -89,6 +85,7 @@ const copyFile = new remote.CopyFile(
   { dependsOn: computeInstance }
 );
 
+// Copy selenoid browser json config to remote instance
 const copyBrowserJsonFile = new remote.CopyFile(
   "copy-browser-json",
   {
@@ -99,6 +96,7 @@ const copyBrowserJsonFile = new remote.CopyFile(
   { dependsOn: computeInstance }
 );
 
+// Execute the copied shell script to install docker in remote instance
 const execCommand = new remote.Command(
   "exec-shell-script",
   {
@@ -108,9 +106,9 @@ const execCommand = new remote.Command(
   { dependsOn: copyFile }
 );
 
-// Export the name and IP address of the Instance
-export const instanceName = computeInstance.name;
-
+// Export the IP address of the Instance
 export const externalIP = address.address;
 
 export const dockerInstallation = execCommand;
+
+export const selenoidBrowserJson = copyBrowserJsonFile;

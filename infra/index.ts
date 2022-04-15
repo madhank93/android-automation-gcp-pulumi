@@ -1,2 +1,2 @@
-export { instanceName } from "./gcp";
-export { selenoid } from "./docker";
+export { externalIP } from "./gcp";
+export { selenoidID } from "./docker";
