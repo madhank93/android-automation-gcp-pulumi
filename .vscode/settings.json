@@ -1,10 +1,18 @@
 {
   "cSpell.words": [
     "aerokube",
+    "appium",
+    "Automator",
     "madhankumaravelu",
     "oslogin",
+    "pageobjects",
     "pulumi",
     "selenoid",
-    "serviceaccount"
+    "serviceaccount",
+    "swaglabsmobileapp",
+    "Testrunner",
+    "waitfor",
+    "wdio",
+    "webdriverio"
   ]
 }

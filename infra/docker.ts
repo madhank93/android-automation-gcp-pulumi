@@ -1,7 +1,8 @@
 import { interpolate } from "@pulumi/pulumi";
 import * as docker from "@pulumi/docker";
-import { externalIP, dockerInstallation } from "./gcp";
+import { externalIP, dockerInstallation, selenoidBrowserJson } from "./gcp";
 
+// Remote docker connection
 const remoteInstance = new docker.Provider(
   "remote",
   {
@@ -16,12 +17,14 @@ const remoteInstance = new docker.Provider(
   { dependsOn: dockerInstallation }
 );
 
+// Create a network in Docker
 const network = new docker.Network(
   "selenoid",
   { name: "selenoid" },
   { provider: remoteInstance }
 );
 
+// Download Android image in remote instance
 const androidImage = new docker.RemoteImage(
   "android-image",
   {
@@ -32,6 +35,7 @@ const androidImage = new docker.RemoteImage(
   }
 );
 
+// Download Selenoid image in remote instance
 const selenoidImage = new docker.RemoteImage(
   "selenoid-image",
   {
@@ -43,6 +47,7 @@ const selenoidImage = new docker.RemoteImage(
   }
 );
 
+// Download Selenoid UI image in remote instance
 const selenoidUiImage = new docker.RemoteImage(
   "selenoid-ui-image",
   {
@@ -54,6 +59,7 @@ const selenoidUiImage = new docker.RemoteImage(
   }
 );
 
+// Start Selenoid container in remote instance
 const selenoidContainer = new docker.Container(
   "selenoid-container",
   {
@@ -89,10 +95,11 @@ const selenoidContainer = new docker.Container(
   },
   {
     provider: remoteInstance,
-    dependsOn: selenoidImage,
+    dependsOn: [selenoidImage, selenoidBrowserJson],
   }
 );
 
+// Start Selenoid container in remote instance and attach it to selenoid
 new docker.Container(
   "selenoid-ui-container",
   {

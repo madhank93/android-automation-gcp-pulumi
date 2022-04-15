@@ -14,6 +14,7 @@ const getKey = (filename: string) =>
 const publicKey = getKey("id_rsa.pub");
 const privateKey = getKey("id_rsa");
 
+// Create service account
 const svcAct = new gcp.serviceaccount.Account("my-service-account", {
   accountId: "service-account",
   displayName: "Service account for Pulumi",
@@ -28,14 +29,14 @@ const address = new gcp.compute.Address("my-address", {
   region: "us-central1",
 });
 
+// Create a network
 const network = new gcp.compute.Network("network");
-
 new gcp.compute.Firewall("firewall", {
   network: network.id,
   allows: [
     {
       protocol: "tcp",
-      ports: ["22", "8080"],
+      ports: ["22", "8080"], // 22 - enable ssh and 8080 - live execution through selenoid ui
     },
   ],
 });
@@ -66,12 +67,14 @@ const computeInstance = new gcp.compute.Instance("instance", {
   },
 });
 
+// Set up a connection to the remote instance
 const connection: types.input.remote.ConnectionArgs = {
   host: address.address,
   user: "madhankumaravelu93",
   privateKey: privateKey,
 };
 
+// Copy shell script to the remote instance
 const copyFile = new remote.CopyFile(
   "copy-shell-script",
   {
@@ -82,6 +85,7 @@ const copyFile = new remote.CopyFile(
   { dependsOn: computeInstance }
 );
 
+// Copy selenoid browser json config to remote instance
 const copyBrowserJsonFile = new remote.CopyFile(
   "copy-browser-json",
   {
@@ -92,6 +96,7 @@ const copyBrowserJsonFile = new remote.CopyFile(
   { dependsOn: computeInstance }
 );
 
+// Execute the copied shell script to install docker in remote instance
 const execCommand = new remote.Command(
   "exec-shell-script",
   {
@@ -105,3 +110,5 @@ const execCommand = new remote.Command(
 export const externalIP = address.address;
 
 export const dockerInstallation = execCommand;
+
+export const selenoidBrowserJson = copyBrowserJsonFile;
