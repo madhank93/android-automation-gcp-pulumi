@@ -4,3 +4,6 @@ src/node_modules/
 *credentials.*
 *key*.*
 ../src/node_modules
+.gradle
+.idea
+build
