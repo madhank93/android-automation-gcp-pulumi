@@ -1,2 +1,2 @@
 export { externalIP } from "./gcp";
-export { selenoidID } from "./docker";
+export { selenoidID, androidContainerLogs } from "./docker";

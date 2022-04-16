@@ -59,6 +59,18 @@ const selenoidUiImage = new docker.RemoteImage(
   }
 );
 
+// Download Android demo test image, contains test scripts
+const androidDemoTestImage = new docker.RemoteImage(
+  "android-demo-image",
+  {
+    name: "madhank93/android-demo",
+  },
+  {
+    provider: remoteInstance,
+    dependsOn: selenoidUiImage,
+  }
+);
+
 // Start Selenoid container in remote instance
 const selenoidContainer = new docker.Container(
   "selenoid-container",
@@ -100,7 +112,7 @@ const selenoidContainer = new docker.Container(
 );
 
 // Start Selenoid container in remote instance and attach it to selenoid
-new docker.Container(
+const selenoidUIContainer = new docker.Container(
   "selenoid-ui-container",
   {
     image: selenoidUiImage.name,
@@ -112,4 +124,19 @@ new docker.Container(
   { provider: remoteInstance, dependsOn: selenoidContainer }
 );
 
+const androidDemoTestContainer = new docker.Container(
+  "android-demo-test-container",
+  {
+    image: androidDemoTestImage.name,
+    name: "android-demo-test",
+    networksAdvanced: [{ name: network.name }],
+    command: ["gradle", "test"],
+  },
+  {
+    provider: remoteInstance,
+    dependsOn: [selenoidContainer, selenoidUIContainer],
+  }
+);
+
 export const selenoidID = selenoidContainer.id;
+export const androidContainerLogs = androidDemoTestContainer.logs;
