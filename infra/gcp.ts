@@ -36,7 +36,10 @@ new gcp.compute.Firewall("firewall", {
   allows: [
     {
       protocol: "tcp",
-      ports: ["22", "8080"], // 22 - enable ssh and 8080 - live execution through selenoid ui
+      // 22 - enables ssh
+      // 4444 - Connects to selenoid sever to execute test from local
+      // 8080 - Connects to selenoid UI to see live execution
+      ports: ["22", "4444", "8080"],
     },
   ],
 });
